@@ -2,21 +2,28 @@ import pytest
 import pandas as pd
 import os
 from datetime import datetime
-from report_generator import ReportGenerator
+from report_generator import ReportGenerator, PLOTLY_AVAILABLE
 
 @pytest.fixture
 def sample_patient_data():
     """Create sample patient data"""
-    return pd.DataFrame({
-        'age': [45, 60, 35],
-        'gender': ['Male', 'Female', 'Male'],
-        'tumor_size': [2.5, 3.0, 1.8],
-        'genetic_risk': [7, 5, 3],
-        'survival_rate': [80, 65, 90],
-        'prediction': [1, 0, 1],
-        'probability': [0.85, 0.35, 0.75],
-        'timestamp': pd.date_range(start='2025-01-01', periods=3)
-    })
+    return {
+        'age': 45,
+        'gender': 'Male',
+        'tumor_size': 2.5,
+        'genetic_risk': 7,
+        'survival_rate': 80,
+        'prediction': 1,
+        'probability': 0.85,
+        'smoking': True,
+        'alcohol': False,
+        'family_history': True,
+        'notes': 'Test notes',
+        'trend_data': {
+            'dates': ['2025-01-01', '2025-01-02', '2025-01-03'],
+            'values': [0.85, 0.82, 0.79]
+        }
+    }
 
 def test_report_generator(sample_patient_data, tmp_path):
     """Test PDF report generation"""
@@ -24,9 +31,16 @@ def test_report_generator(sample_patient_data, tmp_path):
     
     # Create report
     report = ReportGenerator()
-    patient_data = sample_patient_data.iloc[0].to_dict()
-    report.generate_report(patient_data, str(output_file))
+    report.generate_report(sample_patient_data, str(output_file))
     
     # Check file exists
     assert output_file.exists()
     assert output_file.stat().st_size > 0
+    
+    # Test with no trend data
+    output_file2 = tmp_path / "test_report2.pdf"
+    data_no_trend = sample_patient_data.copy()
+    del data_no_trend['trend_data']
+    report.generate_report(data_no_trend, str(output_file2))
+    assert output_file2.exists()
+    assert output_file2.stat().st_size > 0

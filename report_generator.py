@@ -1,13 +1,19 @@
-import pandas as pd
-import plotly.graph_objects as go
-import plotly.express as px
 from fpdf import FPDF
-import os
+import pandas as pd
 from datetime import datetime
-import base64
-import io
 import matplotlib.pyplot as plt
 import seaborn as sns
+import base64
+import io
+import os
+
+try:
+    import plotly.graph_objects as go
+    import plotly.express as px
+    PLOTLY_AVAILABLE = True
+except ImportError:
+    PLOTLY_AVAILABLE = False
+    print("Plotly not available, will use matplotlib for visualizations")
 
 class PDF(FPDF):
     def header(self):
@@ -22,7 +28,7 @@ class PDF(FPDF):
 
 class ReportGenerator:
     def __init__(self):
-        self.pdf = FPDF()
+        self.pdf = PDF()
         
     def generate_report(self, patient_data, output_file):
         """Generate a PDF report for a patient"""
@@ -80,6 +86,10 @@ class ReportGenerator:
             self.pdf.cell(50, 10, factor + ':', 0)
             self.pdf.cell(0, 10, 'Yes' if value else 'No', ln=True)
         
+        # Add visualization if trend data is available
+        if 'trend_data' in patient_data:
+            self._add_trend_visualization(patient_data['trend_data'])
+        
         # Notes
         if patient_data.get('notes'):
             self.pdf.ln(10)
@@ -90,6 +100,52 @@ class ReportGenerator:
         
         # Save the report
         self.pdf.output(output_file)
+    
+    def _add_trend_visualization(self, trend_data):
+        """Add trend visualization using plotly or matplotlib"""
+        if PLOTLY_AVAILABLE:
+            self._add_plotly_visualization(trend_data)
+        else:
+            self._add_matplotlib_visualization(trend_data)
+    
+    def _add_plotly_visualization(self, trend_data):
+        """Create visualization using plotly"""
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=trend_data['dates'],
+            y=trend_data['values'],
+            mode='lines+markers',
+            name='Risk Trend'
+        ))
+        fig.update_layout(
+            title='Risk Trend Over Time',
+            xaxis_title='Date',
+            yaxis_title='Risk Score'
+        )
+        # Save to temporary file
+        temp_file = 'temp_plot.png'
+        fig.write_image(temp_file)
+        self.pdf.image(temp_file, x=10, w=190)
+        import os
+        os.remove(temp_file)
+    
+    def _add_matplotlib_visualization(self, trend_data):
+        """Create visualization using matplotlib"""
+        plt.figure(figsize=(10, 6))
+        plt.plot(trend_data['dates'], trend_data['values'], 'o-')
+        plt.title('Risk Trend Over Time')
+        plt.xlabel('Date')
+        plt.ylabel('Risk Score')
+        plt.grid(True)
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        # Save to temporary file
+        temp_file = 'temp_plot.png'
+        plt.savefig(temp_file)
+        plt.close()
+        self.pdf.image(temp_file, x=10, w=190)
+        import os
+        os.remove(temp_file)
 
 def generate_comparison_report(patients_data):
     """Generate a comparison report for multiple patients"""
