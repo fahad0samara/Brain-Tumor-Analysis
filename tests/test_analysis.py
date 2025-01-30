@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from sklearn.datasets import make_classification
-from brain_tumor_analysis import train_model
+from brain_tumor_analysis import train_model, XGBOOST_AVAILABLE
 
 @pytest.fixture
 def sample_data():
@@ -44,3 +44,9 @@ def test_train_model(sample_data):
     test_prob = model.predict_proba(X[:1])
     assert test_prob.shape == (1, 2)
     assert np.allclose(np.sum(test_prob, axis=1), 1)
+    
+    # Check if model includes XGBoost when available
+    if XGBOOST_AVAILABLE:
+        assert any('xgb' in est[0] for est in model.named_estimators_.items())
+    else:
+        assert all('xgb' not in est[0] for est in model.named_estimators_.items())
