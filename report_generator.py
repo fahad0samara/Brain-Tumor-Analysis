@@ -22,77 +22,74 @@ class PDF(FPDF):
 
 class ReportGenerator:
     def __init__(self):
-        self.pdf = PDF()
-    
-    def create_patient_report(self, patient_data, trend_data=None):
-        """Create a detailed PDF report for a patient"""
+        self.pdf = FPDF()
+        
+    def generate_report(self, patient_data, output_file):
+        """Generate a PDF report for a patient"""
         self.pdf.add_page()
+        
+        # Header
+        self.pdf.set_font('Arial', 'B', 16)
+        self.pdf.cell(0, 10, 'Brain Tumor Analysis Report', ln=True, align='C')
+        self.pdf.ln(10)
         
         # Patient Information
         self.pdf.set_font('Arial', 'B', 12)
-        self.pdf.cell(0, 10, 'Patient Information', 0, 1)
-        self.pdf.set_font('Arial', '', 10)
-        self.pdf.cell(0, 10, f"Name: {patient_data['name']}", 0, 1)
-        self.pdf.cell(0, 10, f"Age: {patient_data['age']}", 0, 1)
-        self.pdf.cell(0, 10, f"Gender: {patient_data['gender']}", 0, 1)
+        self.pdf.cell(0, 10, 'Patient Information', ln=True)
+        self.pdf.set_font('Arial', '', 12)
         
-        # Clinical Measurements
-        self.pdf.ln(5)
+        info_items = [
+            ('Age', patient_data['age']),
+            ('Gender', patient_data['gender']),
+            ('Tumor Size', f"{patient_data['tumor_size']:.1f} cm"),
+            ('Genetic Risk', f"{patient_data['genetic_risk']}/10"),
+            ('Survival Rate', f"{patient_data['survival_rate']}%")
+        ]
+        
+        for label, value in info_items:
+            self.pdf.cell(50, 10, label + ':', 0)
+            self.pdf.cell(0, 10, str(value), ln=True)
+        
+        # Risk Assessment
+        self.pdf.ln(10)
         self.pdf.set_font('Arial', 'B', 12)
-        self.pdf.cell(0, 10, 'Clinical Measurements', 0, 1)
-        self.pdf.set_font('Arial', '', 10)
-        self.pdf.cell(0, 10, f"Tumor Size: {patient_data['tumor_size']} cm", 0, 1)
-        self.pdf.cell(0, 10, f"Genetic Risk: {patient_data['genetic_risk']}", 0, 1)
-        self.pdf.cell(0, 10, f"Survival Rate: {patient_data['survival_rate']}%", 0, 1)
+        self.pdf.cell(0, 10, 'Risk Assessment', ln=True)
+        self.pdf.set_font('Arial', '', 12)
         
-        # Risk Factors
-        self.pdf.ln(5)
+        prediction = "High Risk" if patient_data['prediction'] == 1 else "Low Risk"
+        probability = f"{patient_data['probability']*100:.1f}%"
+        
+        self.pdf.cell(50, 10, 'Prediction:', 0)
+        self.pdf.cell(0, 10, prediction, ln=True)
+        self.pdf.cell(50, 10, 'Probability:', 0)
+        self.pdf.cell(0, 10, probability, ln=True)
+        
+        # Additional Factors
+        self.pdf.ln(10)
         self.pdf.set_font('Arial', 'B', 12)
-        self.pdf.cell(0, 10, 'Risk Factors', 0, 1)
-        self.pdf.set_font('Arial', '', 10)
-        self.pdf.cell(0, 10, f"Smoking: {'Yes' if patient_data['smoking'] else 'No'}", 0, 1)
-        self.pdf.cell(0, 10, f"Alcohol: {'Yes' if patient_data['alcohol'] else 'No'}", 0, 1)
-        self.pdf.cell(0, 10, f"Family History: {'Yes' if patient_data['family_history'] else 'No'}", 0, 1)
+        self.pdf.cell(0, 10, 'Additional Risk Factors', ln=True)
+        self.pdf.set_font('Arial', '', 12)
         
-        # Prediction Results
-        self.pdf.ln(5)
-        self.pdf.set_font('Arial', 'B', 12)
-        self.pdf.cell(0, 10, 'Prediction Results', 0, 1)
-        self.pdf.set_font('Arial', '', 10)
-        risk_level = 'High' if patient_data['prediction'] == 1 else 'Low'
-        self.pdf.cell(0, 10, f"Risk Level: {risk_level}", 0, 1)
-        self.pdf.cell(0, 10, f"Probability: {patient_data['probability']*100:.1f}%", 0, 1)
+        factors = [
+            ('Smoking', patient_data.get('smoking', False)),
+            ('Alcohol', patient_data.get('alcohol', False)),
+            ('Family History', patient_data.get('family_history', False))
+        ]
         
-        # Add trend chart if available
-        if trend_data and len(trend_data['dates']) > 1:
-            plt.figure(figsize=(10, 4))
-            plt.plot(trend_data['dates'], [p*100 for p in trend_data['probabilities']], 
-                    marker='o')
-            plt.title('Risk Probability Trend')
-            plt.xlabel('Date')
-            plt.ylabel('Risk Probability (%)')
-            plt.xticks(rotation=45)
-            plt.tight_layout()
-            
-            # Save plot to memory
-            img_stream = io.BytesIO()
-            plt.savefig(img_stream, format='png')
-            img_stream.seek(0)
-            
-            # Add to PDF
-            self.pdf.ln(10)
-            self.pdf.image(img_stream, x=10, w=190)
-            plt.close()
+        for factor, value in factors:
+            self.pdf.cell(50, 10, factor + ':', 0)
+            self.pdf.cell(0, 10, 'Yes' if value else 'No', ln=True)
         
         # Notes
         if patient_data.get('notes'):
-            self.pdf.ln(5)
+            self.pdf.ln(10)
             self.pdf.set_font('Arial', 'B', 12)
-            self.pdf.cell(0, 10, 'Additional Notes', 0, 1)
-            self.pdf.set_font('Arial', '', 10)
+            self.pdf.cell(0, 10, 'Notes', ln=True)
+            self.pdf.set_font('Arial', '', 12)
             self.pdf.multi_cell(0, 10, patient_data['notes'])
         
-        return self.pdf
+        # Save the report
+        self.pdf.output(output_file)
 
 def generate_comparison_report(patients_data):
     """Generate a comparison report for multiple patients"""
