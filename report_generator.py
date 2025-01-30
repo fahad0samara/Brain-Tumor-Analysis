@@ -17,10 +17,10 @@ except ImportError:
 
 class PDF(FPDF):
     def header(self):
-        self.set_font('Arial', 'B', 15)
+        self.set_font('Arial', 'B', 12)
         self.cell(0, 10, 'Brain Tumor Analysis Report', 0, 1, 'C')
         self.ln(10)
-    
+
     def footer(self):
         self.set_y(-15)
         self.set_font('Arial', 'I', 8)
@@ -28,10 +28,12 @@ class PDF(FPDF):
 
 class ReportGenerator:
     def __init__(self):
-        self.pdf = PDF()
+        pass
         
     def generate_report(self, patient_data, output_file):
         """Generate a PDF report for a patient"""
+        # Create a new PDF instance for each report
+        self.pdf = PDF()
         self.pdf.add_page()
         
         # Header
@@ -99,7 +101,15 @@ class ReportGenerator:
             self.pdf.multi_cell(0, 10, patient_data['notes'])
         
         # Save the report
-        self.pdf.output(output_file)
+        try:
+            self.pdf.output(output_file)
+        finally:
+            # Clean up any temporary files
+            if hasattr(self, '_temp_plot') and os.path.exists(self._temp_plot):
+                try:
+                    os.remove(self._temp_plot)
+                except:
+                    pass
     
     def _add_trend_visualization(self, trend_data):
         """Add trend visualization using plotly or matplotlib"""
@@ -123,11 +133,9 @@ class ReportGenerator:
             yaxis_title='Risk Score'
         )
         # Save to temporary file
-        temp_file = 'temp_plot.png'
-        fig.write_image(temp_file)
-        self.pdf.image(temp_file, x=10, w=190)
-        import os
-        os.remove(temp_file)
+        self._temp_plot = 'temp_plot.png'
+        fig.write_image(self._temp_plot)
+        self.pdf.image(self._temp_plot, x=10, w=190)
     
     def _add_matplotlib_visualization(self, trend_data):
         """Create visualization using matplotlib"""
@@ -140,12 +148,10 @@ class ReportGenerator:
         plt.xticks(rotation=45)
         plt.tight_layout()
         # Save to temporary file
-        temp_file = 'temp_plot.png'
-        plt.savefig(temp_file)
+        self._temp_plot = 'temp_plot.png'
+        plt.savefig(self._temp_plot)
         plt.close()
-        self.pdf.image(temp_file, x=10, w=190)
-        import os
-        os.remove(temp_file)
+        self.pdf.image(self._temp_plot, x=10, w=190)
 
 def generate_comparison_report(patients_data):
     """Generate a comparison report for multiple patients"""
