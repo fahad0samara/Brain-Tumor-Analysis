@@ -46,6 +46,26 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# Sidebar
+st.sidebar.title("Brain Tumor Predictor")
+st.sidebar.markdown("""
+### About This App
+AI-powered brain tumor prediction system that helps medical professionals predict risk levels 
+using advanced machine learning techniques and comprehensive medical data.
+
+#### Key Features:
+- Advanced ML Prediction
+- Patient History Tracking
+- Detailed PDF Reports
+- Risk Trend Analysis
+- Multi-model Ensemble Learning
+
+#### Model Components:
+- Random Forest
+- Gradient Boosting
+- XGBoost (when available)
+""")
+
 # Initialize session state
 if 'patient_id' not in st.session_state:
     st.session_state.patient_id = str(uuid.uuid4())
