@@ -26,7 +26,7 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install --no-cache-dir xgboost
         python -m pip install --no-cache-dir numpy pandas scikit-learn
-        python -m pip install --no-cache-dir fpdf matplotlib seaborn plotly
+        python -m pip install --no-cache-dir fpdf matplotlib seaborn plotly kaleido
         python -m pip install --no-cache-dir flake8 pytest pytest-cov coverage codecov
         if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi
     
